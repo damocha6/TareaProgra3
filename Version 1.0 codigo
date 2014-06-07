@@ -1,0 +1,268 @@
+
+//Tarea Programada 3
+//Daniel Mora - Gerardo Calderon - Edgar Solorzano
+
+//Importacion de clases necesarias para la ejecucion del programa
+import java.awt.Dimension;
+import java.awt.GridBagLayout;
+import java.io.*;
+import java.util.*;
+import java.lang.*;
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
+
+//Definicion de la clase ambiente y sus constructores necesarios 
+public class Ambiente {
+
+Ambiente () {}
+
+//Variables globales para almacenar los datos
+
+private static String[] Variable = new String[50];
+private static String[] Tipo = new String[50];
+private static String[] Valor = new String[50];
+private static int Indice = 0;
+private static int Cantidad = 0;
+private static int Indice2 = 0;
+private static int Indice3 = 0;
+private static int Indice4 = 0;
+private static int Indice5 = 0;
+private static String Valor2;
+
+//___________________________________________________________________________________________________________//
+
+//Funcion para leer el archivo de SML
+
+public void LecturaArchivo(String nombre){
+	try {
+		File f;
+		FileReader lector;
+		f = new File(nombre);
+		lector = new FileReader(f);
+		BufferedReader br = new BufferedReader(lector);
+		String expresion = "";
+		String aux = "";
+		while(true) {
+			aux = br.readLine();
+			if(aux != null) {
+				expresion=expresion+aux;
+				Separar(expresion);
+				expresion = "";
+				Cantidad = 0;
+			}
+			else
+				break;
+			    }
+		br.close();
+		lector.close();
+	}
+	catch(IOException e) {
+	System.out.println("Error: " + e.getMessage());
+	}
+}
+
+//___________________________________________________________________________________________________________//
+
+//Funcion que separa por espacios cada la linea y lo guarda en un arreglo cada palabra
+
+public void Separar (String expresion) {
+	String[] E1 = new String[100];
+	int cont = 0;
+	StringTokenizer st = new StringTokenizer(expresion, " \n");
+	while (st.hasMoreTokens()){
+		E1[cont] = st.nextToken().toString();
+		cont++;
+	}
+	Cantidad = cont;
+	Validar(E1);
+}
+
+//___________________________________________________________________________________________________________//
+
+//Funcion que analiza y valida las lineas del archivo para obtener los valores y tipos
+
+public void Validar (String[] Arreglo) {
+	int contador = 0;
+	while (contador < Cantidad) {
+		if (Arreglo[contador].equals("let")) {
+			Expresion_Let(Arreglo, contador + 2);
+			if (Tipo[Indice] != null)
+				break;
+		}
+		else {
+			if (Arreglo[contador].contains("val")) {
+				contador++;
+				Variable[Indice] = Arreglo[contador];
+				Determinar_Valor(Arreglo,contador + 2);
+				if (Tipo[Indice] != null)
+					break;
+			}
+		}
+		contador++;
+	}
+}
+
+
+
+//___________________________________________________________________________________________________________________________//
+
+//Funcion que evalua las expresiones let
+
+public void Expresion_Let (String[] Arreglo, int exp) {
+	String[] VariableTemporal = new String [30];
+	String[] ValorTemporal = new String [30];
+	int IndiceTemporal = 0;
+	VariableTemporal[IndiceTemporal] = Arreglo[exp];
+	exp = exp + 2;
+	ValorTemporal[IndiceTemporal] = Arreglo[exp];
+	exp++;
+	if (Arreglo[exp].equals("val")) {
+		exp++;
+		IndiceTemporal++;
+		VariableTemporal[IndiceTemporal] = Arreglo[exp];
+		exp = exp + 2;
+		ValorTemporal[IndiceTemporal] = Arreglo[exp];		
+	}
+	else {
+		exp++;
+		if (Arreglo[exp].equals("val")) {
+			exp++;
+			Variable[Indice]=Arreglo[exp];
+			exp = exp + 2;
+			String Ev ="";
+			int i2 = exp;
+			while (!Arreglo[i2].equals("val") || !Arreglo[i2].equals("end")) {
+				if (Arreglo[i2].equals("end") || Arreglo[i2].equals("val")) {
+					Indice5 = i2;
+					break;
+				}
+				if (Arreglo[i2].equals(VariableTemporal[0]))
+					Ev = Ev + ValorTemporal[0];
+				else if (Arreglo[i2].equals(VariableTemporal[1]))
+					Ev = Ev + ValorTemporal[1];
+				else 
+					Ev = Ev + Arreglo[i2];
+				i2++;
+			}
+			Tipo[Indice]=Eval_Exp(Ev);
+			Indice5 = i2;
+		}
+		else {
+			if (IsVariableiable(Arreglo[exp]) == true) {
+				Variable[Indice]=Arreglo[exp];
+				exp = exp + 2;
+				String Ev ="";
+				int i2 = exp;
+				while (!Arreglo[i2].equals("val") || !Arreglo[i2].equals("end")) {
+					if (Arreglo[i2].equals("end") || Arreglo[i2].equals("val")) {
+						Indice5 = i2;
+						break;
+					}
+					if (Arreglo[i2].equals(VariableTemporal[0]))
+						Ev = Ev + ValorTemporal[0];
+					else if (Arreglo[i2].equals(VariableTemporal[1]))
+						Ev = Ev + ValorTemporal[1];
+					else 
+						Ev = Ev + Arreglo[i2];
+					i2++;
+				}
+				Tipo[Indice]=Eval_Exp(Ev);
+				Indice5 = i2;
+			}
+			else {
+				JOptionPane.showMessageDialog(null,"Variableiable no existente o no declarada","Warning",JOptionPane.WARNING_MESSAGE);
+				System.exit(0);
+			}
+			Cantidad = Indice5;
+		}
+	}
+}
+
+
+//_______________________________________________________________________________________________________________________//
+
+//Funcion encargada de determinar el valor y el tipo de las expresiones
+
+public void Determinar_Valor(String[] Arreglo, int exp) {
+	while (exp < Cantidad) {
+		if (IsNumber(Arreglo[exp]) == true){ //Verifica si la expresion es un integer
+			Tipo[Indice] = "int"; //agrega el tipo 'int'
+			Valor[Indice] = Arreglo[exp]; //agrega el valor del integer
+			Indice++;
+		}
+		else if (Arreglo[exp].startsWith("'")) { //Verifica si la expresion es un string
+			Tipo[Indice] = "str"; //agrega el tipo 'str'
+			Valor[Indice] = Arreglo[exp]; //agrega el valor del string
+			Indice++;
+		}
+		else if (Arreglo[exp].equals("true") || Arreglo[exp].equals("false")) { //Verifica si la expresion es un booleano
+			Tipo[Indice] = "bool"; //Agrega el tipo 'bool'
+			Valor[Indice] = Arreglo[exp]; //Agrega true o false dependiendo de la expresion
+			Indice++;
+		}
+		else if (Arreglo[exp].startsWith("(")) { //Verifica si la expresion es una tupla
+			Tipo[Indice] = Valores_Tupla(Arreglo[exp]);
+			Valor[Indice] = Arreglo[exp];
+			Indice++;
+		}
+		else if (Arreglo[exp].startsWith("[")) { //Verifica si la expresion es una lista
+			Tipo[Indice] = Valores_Lista(Arreglo[exp]);
+			Valor[Indice] = Arreglo[exp];
+			Indice++;
+		}
+		else if (Arreglo[exp].startsWith("if")) { //Verifica si la expresion es una condicion if
+			Tipo[Indice]=If_Then_Else(Arreglo,exp+1);
+			exp = Indice4;
+		}
+		else {
+			Tipo[Indice] = Eval_Exp(Arreglo[exp]);
+			Valor[Indice] = Valor2;
+			Indice++;
+		}
+	exp++;
+	}
+}
+
+//____________________________________________________________________________________________________________________________//
+
+//Funcion que determina el valor de la variable por medio del if-then-else y devuelve el tipo de variable
+
+public String If_Then_Else (String[] condiciones, int Ind) {
+	String Resultado = "";
+	String valor1 = "";
+	String valor2 = "";
+	String operador = "";
+	String Booleano = "";
+	for (int elem = Ind; elem <= Cantidad; elem++) {
+		if (IsVariableiable(condiciones[elem]) == true) {
+			valor1 = Valor[Indice3];
+		}
+		else if (IsNumber(condiciones[elem]) == true)
+			valor1 = condiciones[elem];
+		elem++;
+		operador = condiciones[elem];
+		elem++;
+		if (IsVariableiable(condiciones[elem]) == true) {
+			valor2 = Valor[Indice3];
+		}
+		else if (IsNumber(condiciones[elem]) == true)
+			valor2 = condiciones[elem];
+		Booleano = ResultadoExpresion(valor1,valor2,operador);
+		if (Booleano.equals("true")) {
+			elem++;
+			Resultado = Go_To_Then(condiciones, elem);
+			elem = Indice4;
+		}
+		else {
+			while (!condiciones[elem].equals("else")) {
+				elem++;
+			}
+			Resultado = Expresion_Then(condiciones, elem);
+			elem = Indice4;
+		}
+		elem = Indice4;
+	}
+	return Resultado;
+}
+
